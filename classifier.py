@@ -7,14 +7,13 @@ import torch.optim as optim
 import os.path
 #import matplotlib.pyplot as plt
 
-# TODO save laod model
 """Create Model"""
 class Net(nn.Module):
     def __init__(self):
-        super().__init__()
+        super(Net, self).__init__()
         # NN Layers
-        self.fc1 = nn.Linear(28*28, 64)
-        self.fc2 = nn.Linear(64, 64)
+        self.fc1 = nn.Linear(28*28, 28*28)
+        self.fc2 = nn.Linear(28*28, 64)
         self.fc3 = nn.Linear(64, 64)
         self.fc4 = nn.Linear(64, 10)
 
@@ -26,8 +25,17 @@ class Net(nn.Module):
         x = self.fc4(x)
         return F.log_softmax(x, dim=1)
 
+    def num_flat_features(self, x):
+        size = x.size()[1:]
+        num = 1
+        for i in size:
+            num *= i
+        return num
+
 #Path to save model
 PATH = "model.pt"
+#Train with GPU if available
+gpu = torch.cuda.is_available()
 
 class Classifier:
 
@@ -44,6 +52,8 @@ class Classifier:
             print("Getting Data...")
             self.get_data()
             self.net = Net()
+            if gpu:
+                self.net = self.net.cuda()
             print("Training Model...")
             self.train()
             print("Testing Model...")
@@ -51,8 +61,8 @@ class Classifier:
             self.save()
 
     #save
-    def save(self):
-        torch.save(self.net.state_dict(), PATH)
+    def save(self, addition=""):
+        torch.save(self.net.state_dict(), addition+PATH)
         print("Model saved!")
     #load
     def load(self):
@@ -101,6 +111,9 @@ class Classifier:
             for data in self.trainset:
                 #data is a batch of featuressets and labels
                 X, y = data
+                if gpu:
+                    X = X.cuda()
+                    y = y.cuda()
                 self.net.zero_grad()
                 output = self.net(X.view(-1, 28*28))
                 # Loss
@@ -108,6 +121,7 @@ class Classifier:
                 loss.backward()
                 optimizer.step()
             print(loss)
+            #self.save(f"{epoch}") - save epochs individual
 
 
     """Test/Validation"""
@@ -119,6 +133,9 @@ class Classifier:
             print("Validating...")
             for data in self.trainset:
                 X, y = data
+                if gpu:
+                    X = X.cuda()
+                    y = y.cuda()
                 output = self.net(X.view(-1, 28*28))
                 for idx, i in enumerate(output):
                     if torch.argmax(i) == y[idx]:
@@ -143,4 +160,8 @@ class Classifier:
     #     plt.imshow(tensor.view(28,28))
     #     plt.title(output)
     #     plt.show()
-    #     print("Showed")
+    #     print("Showed") 
+
+#train
+# classifier = Classifier()
+# classifier.create()

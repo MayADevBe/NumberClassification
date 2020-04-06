@@ -34,7 +34,7 @@ def draw(event):
         #thicker
         n = get_neighbours(x, y)
         for i,j in n:
-            board.field[i][j] = 1
+            board.field[i][j] = 0.9
             board.draw_coordinate(i, j, "black")
         board.platform.update_idletasks()
     except:
