@@ -17,7 +17,7 @@ class Board:
         for i in range(28):
             self.field.append([])
             for j in range(28): 
-                self.field[i].append(0)
+                self.field[i].append(.0)
 
     def clear(self):
         self.platform.delete("all")

@@ -32,10 +32,10 @@ def draw(event):
         board.field[x][y] = 1
         board.draw_coordinate(x, y, "black")
         #thicker
-        # n = get_neighbours(x, y)
-        # for i,j in n:
-        #     board.field[x][y] = 1
-        #     board.draw_coordinate(i, j, "black")
+        n = get_neighbours(x, y)
+        for i,j in n:
+            board.field[i][j] = 1
+            board.draw_coordinate(i, j, "black")
         board.platform.update_idletasks()
     except:
         pass
@@ -53,7 +53,6 @@ def classify(event=None):
     if classifier == None:
         classifier = Classifier()
         classifier.create()
-
     classification = classifier.classify(board.field)
     board.draw_output(classification.item())
 

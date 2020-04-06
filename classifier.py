@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import os.path
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 # TODO save laod model
 """Create Model"""
@@ -132,16 +132,15 @@ class Classifier:
     def classify(self, img):
         print("Classifying...")
         # turn image matrix
-        print(img)
-        img = list(zip(*img))
-        print(img)
+        img = [[img[j][i] for j in range(len(img))] for i in range(len(img[0]))]
         x = torch.FloatTensor(img)
         with torch.no_grad(): # model shouldn't learn
             output = torch.argmax(self.net(x.view(-1, 28*28)))
+        #self.show_img(x, output)
         return output
 
-    def show_img(self, tensor, output):
-        plt.imshow(tensor.view(28,28))
-        plt.title(output)
-        plt.show()
-        print("Showed")
+    # def show_img(self, tensor, output):
+    #     plt.imshow(tensor.view(28,28))
+    #     plt.title(output)
+    #     plt.show()
+    #     print("Showed")
