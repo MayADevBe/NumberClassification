@@ -47,7 +47,6 @@ def erase(event=None):
     board.draw()
     board.platform.update()
 
-
 def classify(event=None):
     global board, classifier
     if classifier == None:
