@@ -33,8 +33,8 @@ class Board:
         self.platform.create_rectangle(i*self.width, j*self.width, (i+1)*self.width, (j+1)*self.width, fill=color)
 
     def draw_output(self, output):
-        rndfont = 25
-        self.platform.create_text((self.width/2), (self.width/2), text=output, font=('Pursia', rndfont), anchor="center", fill="red", tag="output")
+        rndfont = 50
+        self.platform.create_text(14*self.width, 14*self.width, text=output, font=('Pursia', rndfont), anchor="center", fill="red", tag="output")
 
     def start(self):
         self.window.mainloop()
