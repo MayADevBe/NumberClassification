@@ -12,17 +12,23 @@ class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         # NN Layers
-        self.fc1 = nn.Linear(28*28, 28*28)
-        self.fc2 = nn.Linear(28*28, 64)
-        self.fc3 = nn.Linear(64, 64)
-        self.fc4 = nn.Linear(64, 10)
+        self.conv1 = nn.Conv2d(1, 5, kernel_size=5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(5, 10, kernel_size=5)
+        self.conv_dropout = nn.Dropout2d()
+        self.fc1 = nn.Linear(160, 64)
+        self.fc2 = nn.Linear(64, 10)
 
     def forward(self, x):
         # Activation Functions
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.conv_dropout(x)
+        x = self.pool(F.relu(self.conv2(x)))
+        #print(x.size())
+        #exit()
+        x = x.view(-1, 160)
         x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = self.fc4(x)
+        x = self.fc2(x)
         return F.log_softmax(x, dim=1)
 
     def num_flat_features(self, x):
@@ -74,53 +80,42 @@ class Classifier:
 
     """DATA"""
     def get_data(self):
-        train = datasets.MNIST('', train=True, download=True, transform=transforms.Compose([transforms.ToTensor()]))
-        test = datasets.MNIST('', train=False, download=True, transform=transforms.Compose([transforms.ToTensor()]))
+        train = datasets.MNIST('', train=True, download=True, transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,),(0.3081,))]))
+        test = datasets.MNIST('', train=False, download=True, transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,),(0.3081,))]))
 
-
-        self.trainset = torch.utils.data.DataLoader(train, batch_size=10, shuffle=True)
-        self.testset = torch.utils.data.DataLoader(test, batch_size=10, shuffle=True)
-
-
-    """Check Balance"""
-    def check_balance(self):
-        total = 0
-        counter_dict = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0}
-
-        for data in self.trainset:
-            Xs, ys = data
-            for y in ys:
-                counter_dict[int(y)] += 1
-                total += 1
-
-        print(counter_dict)
-
-        for i in counter_dict:
-            print(f"{i}: {counter_dict[i]/total*100.0}%")
+        kwargs = {'num_workers': 0}#, 'pin_memory': True
+        self.trainset = torch.utils.data.DataLoader(train, batch_size=10, shuffle=True, **kwargs)
+        self.testset = torch.utils.data.DataLoader(test, batch_size=10, shuffle=True, **kwargs)
 
 
     """TRAIN"""
     def train(self):
         # Optimizer
         optimizer = optim.Adam(self.net.parameters(), lr=0.001)
+        criterion = F.nll_loss
 
         EPOCHS = 3
 
-        for epoch in range(EPOCHS):
-            print(f"Epoch {epoch+1}")
-            for data in self.trainset:
+        for epoch in range(1, EPOCHS+1):
+            running_loss = 0.0
+            for batch_id, data in enumerate(self.trainset):
                 #data is a batch of featuressets and labels
                 X, y = data
                 if gpu:
                     X = X.cuda()
                     y = y.cuda()
-                self.net.zero_grad()
-                output = self.net(X.view(-1, 28*28))
+                optimizer.zero_grad()
+                output = self.net(X)
                 # Loss
-                loss = F.nll_loss(output, y) # cause output is vector
+                loss = criterion(output, y) # cause output is vector
                 loss.backward()
                 optimizer.step()
-            print(loss)
+                running_loss += loss.item()
+                if batch_id % 400 == 399: 
+                    print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                        epoch, batch_id * len(data), len(self.trainset.dataset), 
+                        100. * batch_id / len(self.trainset), running_loss / 400))
+                    running_loss = 0.0
             #self.save(f"{epoch}") - save epochs individual
 
 
@@ -129,20 +124,30 @@ class Classifier:
         correct = 0
         total = 0
 
+        class_correct = list(0. for i in range(10))
+        class_total = list(0. for i in range(10))
+
         with torch.no_grad(): # out of sample data
-            print("Validating...")
             for data in self.trainset:
                 X, y = data
                 if gpu:
                     X = X.cuda()
                     y = y.cuda()
-                output = self.net(X.view(-1, 28*28))
-                for idx, i in enumerate(output):
-                    if torch.argmax(i) == y[idx]:
-                        correct += 1
-                    total += 1
+                output = self.net(X)
+                _, predicted = torch.max(output.data, 1)
+                total += y.size(0)
+                correct += (predicted == y).sum().item()
 
-        print(f"Accuracy: {round(correct/total, 3)}")
+                c = (predicted == y).squeeze()
+                for i in range(4):
+                    label = y[i]
+                    class_correct[label] += c[i].item()
+                    class_total[label] += 1
+
+        print('Accuracy of the network on the test images: %d %%' % (100 * correct / total))
+        for i in range(10):
+            print('Accuracy of %5s : %2d %%' % (
+            i, 100 * class_correct[i] / class_total[i]))
 
 
     """Classification"""
@@ -151,8 +156,10 @@ class Classifier:
         # turn image matrix
         img = [[img[j][i] for j in range(len(img))] for i in range(len(img[0]))]
         x = torch.FloatTensor(img)
+        x = x.unsqueeze(0)
+        x = x.unsqueeze(0)
         with torch.no_grad(): # model shouldn't learn
-            output = torch.argmax(self.net(x.view(-1, 28*28)))
+            output = torch.argmax(self.net(x))
         #self.show_img(x, output)
         return output
 
@@ -163,5 +170,5 @@ class Classifier:
     #     print("Showed") 
 
 #train
-# classifier = Classifier()
-# classifier.create()
+classifier = Classifier()
+classifier.create()
