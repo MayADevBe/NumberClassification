@@ -87,6 +87,11 @@ class Classifier:
         self.trainset = torch.utils.data.DataLoader(train, batch_size=10, shuffle=True, **kwargs)
         self.testset = torch.utils.data.DataLoader(test, batch_size=10, shuffle=True, **kwargs)
 
+        # dataiter = iter(self.trainset)
+        # images, labels = dataiter.next()
+
+        # print(images[0])
+
 
     """TRAIN"""
     def train(self):
@@ -156,8 +161,12 @@ class Classifier:
         # turn image matrix
         img = [[img[j][i] for j in range(len(img))] for i in range(len(img[0]))]
         x = torch.FloatTensor(img)
+        #normalise data
         x = x.unsqueeze(0)
+        transform = transforms.Normalize((0.1307,),(0.3081,))
+        x = transform(x)
         x = x.unsqueeze(0)
+        print(x)
         with torch.no_grad(): # model shouldn't learn
             output = torch.argmax(self.net(x))
         #self.show_img(x, output)
@@ -170,5 +179,5 @@ class Classifier:
     #     print("Showed") 
 
 #train
-classifier = Classifier()
-classifier.create()
+# classifier = Classifier()
+# classifier.create()

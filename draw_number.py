@@ -29,13 +29,14 @@ def draw(event):
     x = floor(event.x/W_H)
     y = floor(event.y/W_H)
     try:
-        board.field[x][y] = 1
+        board.field[x][y] = 250
         board.draw_coordinate(x, y, "black")
         #thicker
         n = get_neighbours(x, y)
         for i,j in n:
-            board.field[i][j] = 0.9
-            board.draw_coordinate(i, j, "black")
+            if not board.field[i][j] >= 200:
+                board.field[i][j] += 40
+                board.draw_coordinate(i, j, "black")
         board.platform.update_idletasks()
     except:
         pass

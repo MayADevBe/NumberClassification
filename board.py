@@ -26,7 +26,7 @@ class Board:
         # draw new field + create empty field
         for i in range(28):
             for j in range(28):
-                if self.field[i][j] == 1:
+                if self.field[i][j] > 1:
                     self.platform.create_rectangle(i*self.width, j*self.width, (i+1)*self.width, (j+1)*self.width, fill="black")
     
     def draw_coordinate(self, i, j, color):
